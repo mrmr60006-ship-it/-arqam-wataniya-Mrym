@@ -80,7 +80,7 @@ label{font-weight:800;display:block;margin-bottom:7px}input,textarea,select{widt
 </div>
 
 <div id="teacherScreen" class="hidden">
-<h2>⚙️ إعداد المعلمة</h2><p class="small">يمكنك تعديل نص كل سؤال والخيارات والإجابة الصحيحة، ثم حفظها. التعديلات تحفظ على هذا الجهاز.</p>
+<h2>⚙️ إعداد المعلمة</h2><p class="small">يمكنك تعديل نص كل سؤال والخيارات الأربعة والإجابة الصحيحة، ثم حفظها. التعديلات تحفظ على هذا الجهاز.</p>
 <div class="topActions"><button class="btn primary" onclick="saveQuestions()">حفظ التعديلات</button><button class="btn secondary" onclick="resetQuestions()">استعادة الأسئلة الأصلية</button><button class="btn secondary" onclick="closeTeacher()">← العودة</button></div>
 <div id="editor"></div>
 </div>
@@ -96,34 +96,37 @@ label{font-weight:800;display:block;margin-bottom:7px}input,textarea,select{widt
 
 <script>
 const originalQuestions=[
-{q:"عدّي الأعلام ثم اختاري العدد الصحيح.",options:["٢","٣","٤"],answer:1},
-{q:"كم عدد النخيل؟",options:["٤","٥","٦"],answer:1},
-{q:"اختاري المجموعة التي تحتوي على ٦ عناصر.",options:["٤ عناصر ⭐⭐⭐⭐","٦ عناصر ⭐⭐⭐⭐⭐⭐","٨ عناصر ⭐⭐⭐⭐⭐⭐⭐⭐"],answer:1},
-{q:"ما العدد الذي يأتي بعد ٤؟",options:["٣","٥","٦"],answer:1},
-{q:"ما العدد الذي يأتي قبل ٧؟",options:["٥","٦","٨"],answer:1},
-{q:"رتّبي الأعداد من الأصغر إلى الأكبر: ٧ - ٣ - ٥",options:["٣ - ٥ - ٧","٥ - ٣ - ٧","٧ - ٥ - ٣"],answer:0},
-{q:"كم عدد النجوم؟ ⭐⭐⭐⭐⭐⭐⭐⭐",options:["٧","٨","٩"],answer:1},
-{q:"أي عدد يمثل هذه المجموعة؟ 🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦",options:["٧","٨","٩"],answer:2},
-{q:"لديكِ ٧ عناصر، كم نحتاج لنصل إلى ١٠؟",options:["٢","٣","٤"],answer:1},
-{q:"التحدي النهائي: كم عدد العناصر؟ 🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦",options:["٨","٩","١٠"],answer:2}
+{q:"ما العدد الذي يمثل علمين؟",options:["١","٢","٣","٤"],answer:1},
+{q:"ما العدد الذي يمثل خمسة نخيل؟",options:["٣","٤","٥","٦"],answer:2},
+{q:"اختاري العدد ٦.",options:["٤","٥","٦","٧"],answer:2},
+{q:"ما العدد الذي يأتي بعد ٤؟",options:["٣","٤","٥","٦"],answer:2},
+{q:"ما العدد الذي يأتي قبل ٧؟",options:["٥","٦","٧","٨"],answer:1},
+{q:"رتّبي الأعداد من الأصغر إلى الأكبر: ٧ - ٣ - ٥",options:["٣ - ٥ - ٧","٥ - ٣ - ٧","٧ - ٥ - ٣","٣ - ٧ - ٥"],answer:0},
+{q:"كم عدد النجوم؟ ⭐⭐⭐⭐⭐⭐⭐⭐",options:["٦","٧","٨","٩"],answer:2},
+{q:"أي عدد يمثل هذه المجموعة؟ 🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦",options:["٧","٨","٩","١٠"],answer:2},
+{q:"لديكِ ٧ عناصر، كم نحتاج لنصل إلى ١٠؟",options:["١","٢","٣","٤"],answer:2},
+{q:"التحدي النهائي: كم عدد العناصر؟ 🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦🇸🇦",options:["٧","٨","٩","١٠"],answer:3}
 ];
-let questions=JSON.parse(localStorage.getItem("nationalNumbersQuestions")||"null")||JSON.parse(JSON.stringify(originalQuestions));
-let current=0,score=0,locked=false,student="";
+let savedQuestions=null;
+try{savedQuestions=JSON.parse(localStorage.getItem("nationalNumbersQuestions")||"null");}catch(e){}
+const validQuestions=Array.isArray(savedQuestions)&&savedQuestions.length>0&&savedQuestions.every(q=>q&&typeof q.q==="string"&&Array.isArray(q.options)&&q.options.length===4&&q.options.every(x=>typeof x==="string")&&Number.isInteger(q.answer)&&q.answer>=0&&q.answer<4);
+let questions=validQuestions?savedQuestions:JSON.parse(JSON.stringify(originalQuestions));
+let current=0,score=0,locked=false,student="",completed=false;
 
 function ar(n){return String(n).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);}
 function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));}
-function startGame(){student=document.getElementById("studentName").value.trim();if(!student){alert("اكتبي اسم الطالبة أولًا 🌷");return;}current=0;score=0;document.getElementById("startScreen").classList.add("hidden");document.getElementById("gameScreen").classList.remove("hidden");renderQuestion();}
+function startGame(){student=document.getElementById("studentName").value.trim();if(!student){alert("اكتبي اسم الطالبة أولًا 🌷");return;}current=0;score=0;completed=false;document.getElementById("certificateScreen").classList.add("hidden");document.getElementById("resultScreen").classList.add("hidden");document.getElementById("startScreen").classList.add("hidden");document.getElementById("gameScreen").classList.remove("hidden");renderQuestion();}
 function renderQuestion(){locked=false;let q=questions[current];document.getElementById("qLabel").textContent=`السؤال ${ar(current+1)} من ${ar(questions.length)}`;document.getElementById("liveScore").textContent=`${ar(score)} / ${ar(questions.length)}`;document.getElementById("bar").style.width=(current/questions.length*100)+"%";document.getElementById("question").textContent=q.q;let o=document.getElementById("options");o.innerHTML="";q.options.forEach((x,i)=>{let b=document.createElement("button");b.className="opt";b.textContent=x;b.onclick=()=>choose(i,b);o.appendChild(b);});document.getElementById("feedback").className="feedback hidden";document.getElementById("nextBtn").classList.add("hidden");}
 function choose(i,b){if(locked)return;let q=questions[current];if(i===q.answer){locked=true;score++;b.classList.add("correct");document.querySelectorAll(".opt").forEach(x=>x.disabled=true);let f=document.getElementById("feedback");f.className="feedback success";f.textContent="أحسنتِ يا بطلة! 🌟";document.getElementById("nextBtn").classList.remove("hidden");document.getElementById("bar").style.width=((current+1)/questions.length*100)+"%";}else{b.classList.add("wrong");let f=document.getElementById("feedback");f.className="feedback error";f.textContent="حاولي مرة أخرى 💚";setTimeout(()=>b.classList.remove("wrong"),450);}}
-function nextQuestion(){current++;if(current>=questions.length){showResult();return;}renderQuestion();}
-function showResult(){document.getElementById("gameScreen").classList.add("hidden");document.getElementById("resultScreen").classList.remove("hidden");document.getElementById("finalName").textContent=student;document.getElementById("finalScore").textContent=`${ar(score)} / ${ar(questions.length)}`;}
-function showCertificate(){document.getElementById("resultScreen").classList.add("hidden");document.getElementById("certificateScreen").classList.remove("hidden");document.getElementById("certName").textContent=student;}
+function nextQuestion(){current++;if(current>=questions.length){completed=true;showResult();return;}renderQuestion();}
+function showResult(){if(current<questions.length)return;document.getElementById("gameScreen").classList.add("hidden");document.getElementById("resultScreen").classList.remove("hidden");document.getElementById("finalName").textContent=student;document.getElementById("finalScore").textContent=`${ar(score)} / ${ar(questions.length)}`;}
+function showCertificate(){if(!completed || current<questions.length){alert("تظهر الشهادة بعد إتمام جميع الأسئلة العشرة 🌷");return;}document.getElementById("resultScreen").classList.add("hidden");document.getElementById("certificateScreen").classList.remove("hidden");document.getElementById("certName").textContent=student;}
 function backToResult(){document.getElementById("certificateScreen").classList.add("hidden");document.getElementById("resultScreen").classList.remove("hidden");}
-function restart(){document.getElementById("resultScreen").classList.add("hidden");document.getElementById("certificateScreen").classList.add("hidden");document.getElementById("startScreen").classList.remove("hidden");document.getElementById("studentName").value="";score=0;current=0;}
+function restart(){document.getElementById("resultScreen").classList.add("hidden");document.getElementById("certificateScreen").classList.add("hidden");document.getElementById("startScreen").classList.remove("hidden");document.getElementById("studentName").value="";score=0;current=0;completed=false;}
 function openTeacher(){document.getElementById("startScreen").classList.add("hidden");document.getElementById("teacherScreen").classList.remove("hidden");renderEditor();}
 function closeTeacher(){document.getElementById("teacherScreen").classList.add("hidden");document.getElementById("startScreen").classList.remove("hidden");}
 function renderEditor(){let ed=document.getElementById("editor");ed.innerHTML="";questions.forEach((q,i)=>{let c=document.createElement("div");c.className="editCard";c.innerHTML=`<h3>السؤال ${ar(i+1)}</h3><label>نص السؤال</label><textarea class="eq" rows="2">${esc(q.q)}</textarea><div class="editGrid">${q.options.map((o,j)=>`<div><label>الخيار ${ar(j+1)}</label><input class="eo" value="${esc(o)}"></div>`).join("")}</div><label style="margin-top:10px">الإجابة الصحيحة</label><select class="ea">${q.options.map((o,j)=>`<option value="${j}" ${j===q.answer?"selected":""}>الخيار ${ar(j+1)}: ${esc(o)}</option>`).join("")}</select>`;ed.appendChild(c);});}
-function saveQuestions(){questions=[...document.querySelectorAll(".editCard")].map(c=>({q:c.querySelector(".eq").value,options:[...c.querySelectorAll(".eo")].map(x=>x.value),answer:Number(c.querySelector(".ea").value)}));localStorage.setItem("nationalNumbersQuestions",JSON.stringify(questions));alert("تم حفظ التعديلات بنجاح 💚");}
+function saveQuestions(){let cards=[...document.querySelectorAll(".editCard")];let next=cards.map(c=>({q:c.querySelector(".eq").value.trim(),options:[...c.querySelectorAll(".eo")].map(x=>x.value.trim()),answer:Number(c.querySelector(".ea").value)}));if(next.some(q=>!q.q||q.options.length!==4||q.options.some(x=>!x))){alert("تأكدي من كتابة نص السؤال والخيارات الأربعة كلها 🌷");return;}questions=next;localStorage.setItem("nationalNumbersQuestions",JSON.stringify(questions));alert("تم حفظ التعديلات بنجاح 💚");}
 function resetQuestions(){if(confirm("هل تريدين استعادة الأسئلة الأصلية؟")){questions=JSON.parse(JSON.stringify(originalQuestions));localStorage.setItem("nationalNumbersQuestions",JSON.stringify(questions));renderEditor();}}
 async function saveImage(){if(!window.html2canvas){alert("انتظري لحظة ثم حاولي مرة أخرى.");return;}let c=await html2canvas(document.getElementById("certificatePrint"),{scale:2,backgroundColor:"#fffdf6",useCORS:true});let a=document.createElement("a");a.download=(student||"شهادة")+"-أرقام-وطنية-صغيرة.png";a.href=c.toDataURL("image/png");a.click();}
 </script>
